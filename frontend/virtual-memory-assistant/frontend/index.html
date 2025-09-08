@@ -36,18 +36,31 @@
             <h2>Query Memories</h2>
             <form id="query-form">
                 <label for="query">Search Query:</label>
-                <input type="text" id="query" name="query" required>
+                <input type="text" id="query" name="query" placeholder="Ask about your memories..." required>
                 
-                <label for="top_k">Top K Results:</label>
-                <input type="number" id="top_k" name="top_k" value="5" min="1">
+                <label for="top_k">Number of Results:</label>
+                <input type="number" id="top_k" name="top_k" value="5" min="1" max="20">
                 
-                <button type="submit">Query</button>
+                <button type="submit">Search Memories</button>
             </form>
-            <div id="query-results"></div>
+            
+            <!-- Loading indicator -->
+            <div id="loading" style="display: none; text-align: center; padding: 20px;">
+                <p>Searching memories and generating answer...</p>
+            </div>
+            
+            <!-- LLM Answer Section -->
+            <div id="answer-section" style="display: none; margin-top: 20px;">
+                <h3>AI Answer</h3>
+                <div id="llm-answer" class="answer-box"></div>
+            </div>
+            
+            <!-- ChromaDB Results Section -->
+            <div id="results-section" style="display: none; margin-top: 20px;">
+                <h3>Relevant Memories Found</h3>
+                <div id="query-memories" class="memories-list"></div>
+            </div>
         </section>
-        
-        <div id="llm-answer"></div>
-        <div id="query-memories"></div>
     </div>
     
     <script src="app.js"></script>

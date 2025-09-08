@@ -20,6 +20,7 @@ Notes:
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -181,7 +182,7 @@ def chroma_add(emb_id: str, vector: List[float], metadata: Dict):
     if not chroma_ready or collection is None:
         return False
     collection.add(ids=[emb_id], embeddings=[vector], metadatas=[metadata], documents=[metadata.get("text","")])
-    client.persist()
+    # ChromaDB automatically persists when configured with persist_directory
     return True
 
 def chroma_query(vector: List[float], top_k: int = 5):
@@ -221,6 +222,15 @@ def inmem_query(vector: List[float], top_k: int = 5):
 # FastAPI app and endpoints
 # -----------------------------
 app = FastAPI(title="Virtual Memory - Extended Service")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 @app.on_event("startup")
 async def startup_event():
@@ -313,32 +323,21 @@ class QueryRequest(BaseModel):
 
 
 
-# load a free instruct model (small enough for demo, can swap with Mistral/LLaMA)
+# load a simple and reliable text generation model
 try:
     print("Loading text generation model...")
+    # Using GPT-2 which is very reliable and lightweight
     generator = pipeline(
         "text-generation",
-        model="tiiuae/falcon-7b-instruct",  # or "mistralai/Mistral-7B-Instruct-v0.2"
-        device_map="auto",  # will use GPU if available
+        model="gpt2",  # Very reliable and lightweight
+        device_map="auto",
         torch_dtype=torch.float16
     )
-    print("Text generation model loaded successfully.")
+    print("Text generation model (GPT-2) loaded successfully.")
 except Exception as e:
-    print(f"Failed to load Falcon model: {e}")
-    print("Falling back to a smaller model...")
-    try:
-        # Fallback to a smaller, more compatible model
-        generator = pipeline(
-            "text-generation",
-            model="gpt2",  # Much smaller and more compatible
-            device_map="auto",
-            torch_dtype=torch.float16
-        )
-        print("Fallback model (GPT-2) loaded successfully.")
-    except Exception as e2:
-        print(f"Failed to load fallback model: {e2}")
-        print("Text generation will be disabled.")
-        generator = None
+    print(f"Failed to load GPT-2 model: {e}")
+    print("Text generation will be disabled.")
+    generator = None
 
 
 
@@ -373,15 +372,25 @@ async def query_memories(q: QueryRequest):
 
     # Build context for LLM
     context = "\n".join(context_texts)
-    prompt = f"You are a helpful assistant with access to personal memories.\n" \
-             f"User query: {q.query}\n" \
-             f"Relevant memories: {context}\n" \
-             f"Answer the query using the memories above."
+    prompt = f"Human: {q.query}\n" \
+             f"Context from memories: {context}\n" \
+             f"Assistant:"
 
     # Generate answer
     if generator is not None:
         try:
-            llm_response = generator(prompt, max_new_tokens=200, do_sample=True)[0]["generated_text"]
+            # Generate response with better parameters for DialoGPT/GPT-2
+            result = generator(
+                prompt, 
+                max_new_tokens=150, 
+                do_sample=True, 
+                temperature=0.7,
+                pad_token_id=generator.tokenizer.eos_token_id
+            )
+            llm_response = result[0]["generated_text"]
+            # Extract only the assistant's response part
+            if "Assistant:" in llm_response:
+                llm_response = llm_response.split("Assistant:")[-1].strip()
         except Exception as e:
             print(f"Error generating response: {e}")
             llm_response = "Text generation is currently unavailable. Here are the relevant memories found."

@@ -3,83 +3,122 @@ const apiUrl = "http://127.0.0.1:8000"; // Adjust the URL if needed
 document.addEventListener("DOMContentLoaded", () => {
     const uploadForm = document.getElementById("upload-form");
     const queryForm = document.getElementById("query-form");
-    const resultsContainer = document.getElementById("results");
 
+    // Handle upload form
     uploadForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const formData = new FormData(uploadForm);
-        const response = await fetch(`${apiUrl}/memories/upload`, {
-            method: "POST",
-            body: formData,
-        });
-        const result = await response.json();
-        alert(`Memory uploaded with ID: ${result.memory_id}`);
-        uploadForm.reset();
+        
+        try {
+            const response = await fetch(`${apiUrl}/memories/upload`, {
+                method: "POST",
+                body: formData,
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                alert(`Memory uploaded successfully!\nMemory ID: ${result.memory_id}\nUUID: ${result.uuid}`);
+                uploadForm.reset();
+            } else {
+                const error = await response.json();
+                alert(`Upload failed: ${error.detail || 'Unknown error'}`);
+            }
+        } catch (error) {
+            alert(`Upload failed: ${error.message}`);
+        }
     });
 
+    // Handle query form
     queryForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const queryText = document.getElementById("query-text").value;
-        const topK = document.getElementById("top-k").value;
+        const query = document.getElementById('query').value.trim();
+        const top_k = parseInt(document.getElementById('top_k').value, 10) || 5;
 
-        const response = await fetch(`${apiUrl}/memories/query`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ query: queryText, top_k: topK }),
-        });
-        const results = await response.json();
-        displayResults(results.results);
-    });
-
-    function displayResults(results) {
-        resultsContainer.innerHTML = "";
-        results.forEach((memory) => {
-            const memoryDiv = document.createElement("div");
-            memoryDiv.innerHTML = `
-                <h3>${memory.kind} Memory</h3>
-                <p>ID: ${memory.memory_id}</p>
-                <p>UUID: ${memory.uuid}</p>
-                <p>Created At: ${memory.created_at}</p>
-                <p>Transcript: ${memory.transcript || "N/A"}</p>
-                <p>Caption: ${memory.caption || "N/A"}</p>
-                <p>Filename: ${memory.filename || "N/A"}</p>
-                <hr>
-            `;
-            resultsContainer.appendChild(memoryDiv);
-        });
-    }
-});
-
-document.getElementById('query-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const query = document.getElementById('query').value;
-    const top_k = parseInt(document.getElementById('top_k').value, 10) || 5;
-
-    document.getElementById('llm-answer').textContent = "Loading...";
-    document.getElementById('query-memories').textContent = "";
-
-    const response = await fetch('/memories/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, top_k })
-    });
-
-    if (response.ok) {
-        const data = await response.json();
-        document.getElementById('llm-answer').innerHTML = `<strong>Answer:</strong> ${data.llm_answer || "No answer."}`;
-        if (data.results && data.results.length > 0) {
-            let memList = "<h3>Relevant Memories:</h3><ul>";
-            data.results.forEach(mem => {
-                memList += `<li>${mem.kind} - ${mem.transcript || mem.caption || mem.text || ''}</li>`;
-            });
-            memList += "</ul>";
-            document.getElementById('query-memories').innerHTML = memList;
-        } else {
-            document.getElementById('query-memories').innerHTML = "<em>No relevant memories found.</em>";
+        if (!query) {
+            alert('Please enter a search query.');
+            return;
         }
-    } else {
-        document.getElementById('llm-answer').textContent = "Error fetching answer.";
+
+        // Show loading state
+        showLoading(true);
+        hideResults();
+
+        try {
+            const response = await fetch(`${apiUrl}/memories/query`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, top_k })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                displayQueryResults(data);
+            } else {
+                const error = await response.json();
+                showError(`Query failed: ${error.detail || 'Unknown error'}`);
+            }
+        } catch (error) {
+            showError(`Query failed: ${error.message}`);
+        } finally {
+            showLoading(false);
+        }
+    });
+
+    function showLoading(show) {
+        const loading = document.getElementById('loading');
+        loading.style.display = show ? 'block' : 'none';
+    }
+
+    function hideResults() {
+        document.getElementById('answer-section').style.display = 'none';
+        document.getElementById('results-section').style.display = 'none';
+    }
+
+    function showError(message) {
+        const answerSection = document.getElementById('answer-section');
+        const llmAnswer = document.getElementById('llm-answer');
+        
+        answerSection.style.display = 'block';
+        llmAnswer.innerHTML = `<div style="color: #d32f2f; background: #ffebee; border: 1px solid #f8bbd9; padding: 15px; border-radius: 6px;">${message}</div>`;
+    }
+
+    function displayQueryResults(data) {
+        // Display LLM answer
+        const answerSection = document.getElementById('answer-section');
+        const llmAnswer = document.getElementById('llm-answer');
+        
+        answerSection.style.display = 'block';
+        llmAnswer.innerHTML = data.llm_answer || "No answer generated.";
+
+        // Display ChromaDB results
+        const resultsSection = document.getElementById('results-section');
+        const queryMemories = document.getElementById('query-memories');
+        
+        if (data.results && data.results.length > 0) {
+            resultsSection.style.display = 'block';
+            queryMemories.innerHTML = data.results.map(memory => createMemoryCard(memory)).join('');
+        } else {
+            resultsSection.style.display = 'block';
+            queryMemories.innerHTML = '<div style="text-align: center; color: #666; padding: 20px; font-style: italic;">No relevant memories found.</div>';
+        }
+    }
+
+    function createMemoryCard(memory) {
+        const content = memory.transcript || memory.caption || memory.text || 'No content available';
+        const date = new Date(memory.created_at).toLocaleDateString();
+        const time = new Date(memory.created_at).toLocaleTimeString();
+        
+        return `
+            <div class="memory-item">
+                <div class="memory-header">
+                    <span class="memory-type">${memory.kind.toUpperCase()}</span>
+                    <span class="memory-date">${date} at ${time}</span>
+                </div>
+                <div class="memory-content">
+                    ${content}
+                </div>
+                ${memory.filename ? `<div style="margin-top: 8px; font-size: 12px; color: #666;">File: ${memory.filename}</div>` : ''}
+            </div>
+        `;
     }
 });
