@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Memory Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Virtual Memory Assistant</h1>
+        
+        <section>
+            <h2>Upload Memory</h2>
+            <form id="upload-form">
+                <label for="kind">Memory Type:</label>
+                <select id="kind" name="kind" required>
+                    <option value="text">Text</option>
+                    <option value="audio">Audio</option>
+                    <option value="video">Video</option>
+                    <option value="image">Image</option>
+                </select>
+                
+                <label for="file">File:</label>
+                <input type="file" id="file" name="file">
+                
+                <label for="text">Text:</label>
+                <textarea id="text" name="text"></textarea>
+                
+                <button type="submit">Upload</button>
+            </form>
+            <div id="upload-response"></div>
+        </section>
+
+        <section>
+            <h2>Query Memories</h2>
+            <form id="query-form">
+                <label for="query">Search Query:</label>
+                <input type="text" id="query" name="query" required>
+                
+                <label for="top_k">Top K Results:</label>
+                <input type="number" id="top_k" name="top_k" value="5" min="1">
+                
+                <button type="submit">Query</button>
+            </form>
+            <div id="query-results"></div>
+        </section>
+        
+        <div id="llm-answer"></div>
+        <div id="query-memories"></div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+pydantic[dotenv]
+python-multipart
+aiofiles
+sentence-transformers
+chromadb
+torch
+openai-whisper
+opencv-python
+accelerate

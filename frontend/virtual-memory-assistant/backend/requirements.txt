@@ -1,0 +1,10 @@
+FastAPI
+sqlmodel
+python-multipart
+aiofiles
+pydantic[dotenv]
+sentence-transformers
+chromadb
+openai-whisper
+opencv-python
+ffmpeg-python
