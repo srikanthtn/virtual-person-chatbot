@@ -3,6 +3,7 @@ const apiUrl = "http://127.0.0.1:8000"; // Adjust the URL if needed
 document.addEventListener("DOMContentLoaded", () => {
     const uploadForm = document.getElementById("upload-form");
     const queryForm = document.getElementById("query-form");
+    const refreshMemoriesBtn = document.getElementById("refresh-memories");
 
     // Handle upload form
     uploadForm.addEventListener("submit", async (event) => {
@@ -19,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const result = await response.json();
                 alert(`Memory uploaded successfully!\nMemory ID: ${result.memory_id}\nUUID: ${result.uuid}`);
                 uploadForm.reset();
+                // Refresh memories list after successful upload
+                loadAllMemories();
             } else {
                 const error = await response.json();
                 alert(`Upload failed: ${error.detail || 'Unknown error'}`);
@@ -121,4 +124,56 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         `;
     }
+
+    // Handle refresh memories button
+    refreshMemoriesBtn.addEventListener("click", () => {
+        loadAllMemories();
+    });
+
+    // Load all memories function
+    async function loadAllMemories() {
+        const memoriesLoading = document.getElementById('memories-loading');
+        const allMemories = document.getElementById('all-memories');
+        const memoriesStats = document.getElementById('memories-stats');
+        
+        try {
+            memoriesLoading.style.display = 'block';
+            allMemories.innerHTML = '';
+            
+            const response = await fetch(`${apiUrl}/memories/list`);
+            
+            if (response.ok) {
+                const memories = await response.json();
+                
+                // Update stats
+                const totalMemories = memories.length;
+                const memoriesByType = memories.reduce((acc, mem) => {
+                    acc[mem.kind] = (acc[mem.kind] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                memoriesStats.innerHTML = `
+                    <div class="stats-item">Total: ${totalMemories}</div>
+                    ${Object.entries(memoriesByType).map(([type, count]) => 
+                        `<div class="stats-item">${type.toUpperCase()}: ${count}</div>`
+                    ).join('')}
+                `;
+                
+                if (memories.length > 0) {
+                    allMemories.innerHTML = memories.map(memory => createMemoryCard(memory)).join('');
+                } else {
+                    allMemories.innerHTML = '<div style="text-align: center; color: #666; padding: 40px; font-style: italic;">No memories found. Upload some memories to get started!</div>';
+                }
+            } else {
+                allMemories.innerHTML = '<div style="text-align: center; color: #d32f2f; padding: 20px;">Failed to load memories. Please try again.</div>';
+            }
+        } catch (error) {
+            allMemories.innerHTML = `<div style="text-align: center; color: #d32f2f; padding: 20px;">Error loading memories: ${error.message}</div>`;
+        } finally {
+            memoriesLoading.style.display = 'none';
+        }
+    }
+
+    // Load memories on page load
+    loadAllMemories();
 });

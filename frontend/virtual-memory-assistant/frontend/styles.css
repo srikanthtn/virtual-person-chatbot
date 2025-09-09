@@ -155,3 +155,110 @@ button[type="submit"]:hover {
 button[type="submit"]:active {
     transform: translateY(0);
 }
+
+/* Memories list styles */
+.memories-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.memories-stats {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.stats-item {
+    background: #e9ecef;
+    color: #495057;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    border: 1px solid #dee2e6;
+}
+
+#all-memories {
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+#all-memories::-webkit-scrollbar {
+    width: 8px;
+}
+
+#all-memories::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#all-memories::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+#all-memories::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Enhanced memory item styles */
+.memory-item {
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+}
+
+.memory-item:hover {
+    border-left-color: #0056b3;
+    transform: translateX(2px);
+}
+
+.memory-item:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.memory-item:nth-child(odd) {
+    background: #ffffff;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .memories-controls {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .memories-stats {
+        justify-content: center;
+    }
+    
+    .container {
+        width: 95%;
+    }
+}

@@ -33,6 +33,20 @@
         </section>
 
         <section>
+            <h2>All Memories</h2>
+            <div class="memories-controls">
+                <button id="refresh-memories" class="btn-primary">Refresh List</button>
+                <div class="memories-stats" id="memories-stats"></div>
+            </div>
+            <div id="all-memories-section">
+                <div id="memories-loading" style="display: none; text-align: center; padding: 20px;">
+                    <p>Loading memories...</p>
+                </div>
+                <div id="all-memories" class="memories-list"></div>
+            </div>
+        </section>
+
+        <section>
             <h2>Query Memories</h2>
             <form id="query-form">
                 <label for="query">Search Query:</label>

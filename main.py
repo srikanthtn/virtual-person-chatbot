@@ -188,7 +188,7 @@ def chroma_add(emb_id: str, vector: List[float], metadata: Dict):
 def chroma_query(vector: List[float], top_k: int = 5):
     if not chroma_ready or collection is None:
         return []
-    res = collection.query(query_embeddings=[vector], n_results=top_k, include=['metadatas','distances','ids','documents'])
+    res = collection.query(query_embeddings=[vector], n_results=top_k, include=['metadatas','distances','documents'])
     # res is dict-like
     out = []
     if res and len(res.get('ids', []))>0:
@@ -329,13 +329,13 @@ try:
     # Using GPT-2 which is very reliable and lightweight
     generator = pipeline(
         "text-generation",
-        model="gpt2",  # Very reliable and lightweight
+        model="gpt2-large",  # Very reliable and lightweight
         device_map="auto",
         torch_dtype=torch.float16
     )
-    print("Text generation model (GPT-2) loaded successfully.")
+    print("Text generation model (GPT-2-large) loaded successfully.")
 except Exception as e:
-    print(f"Failed to load GPT-2 model: {e}")
+    print(f"Failed to load GPT-2-large model: {e}")
     print("Text generation will be disabled.")
     generator = None
 
@@ -374,7 +374,7 @@ async def query_memories(q: QueryRequest):
     context = "\n".join(context_texts)
     prompt = f"Human: {q.query}\n" \
              f"Context from memories: {context}\n" \
-             f"Assistant:"
+             f"Assistant:" 
 
     # Generate answer
     if generator is not None:
@@ -384,7 +384,7 @@ async def query_memories(q: QueryRequest):
                 prompt, 
                 max_new_tokens=150, 
                 do_sample=True, 
-                temperature=0.7,
+                temperature=0.9,
                 pad_token_id=generator.tokenizer.eos_token_id
             )
             llm_response = result[0]["generated_text"]
@@ -407,8 +407,21 @@ async def query_memories(q: QueryRequest):
 @app.get("/memories/list")
 async def list_memories():
     with Session(engine) as session:
-        res = session.exec(select(Memory)).all()
-    return res
+        memories = session.exec(select(Memory).order_by(Memory.created_at.desc())).all()
+        return [
+            {
+                "id": mem.id,
+                "uuid": mem.uuid,
+                "kind": mem.kind,
+                "created_at": mem.created_at.isoformat(),
+                "transcript": mem.transcript,
+                "caption": mem.caption,
+                "text": mem.text,
+                "filename": mem.filename,
+                "embedding_id": mem.embedding_id
+            }
+            for mem in memories
+        ]
 
 @app.get("/health")
 async def health():
